@@ -44,6 +44,14 @@ build/
 Build/
 build-*/
 
+# ROS2 Build Workspace
+install/
+log/
+
+# Python Cache
+__pycache__/
+*.pyc
+
 # CMake generated files
 CMakeFiles/
 CMakeCache.txt
@@ -67,3 +75,9 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
