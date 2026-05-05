@@ -1,0 +1,26 @@
+{
+  "name": "Sentinel UAV Dev Env",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "options": ["--network=host"]
+  },
+  "runArgs": [
+    "--network=host",
+    "--privileged",
+    "-e",
+    "DISPLAY=${env:DISPLAY}",
+    "-v",
+    "/tmp/.X11-unix:/tmp/.X11-unix:ro"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-iot.vscode-ros",
+        "twxs.cmake",
+        "ms-vscode.cmake-tools"
+      ]
+    }
+  },
+  "remoteUser": "root"
+}
