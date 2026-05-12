@@ -4,9 +4,11 @@
     "dockerfile": "Dockerfile",
     "options": ["--network=host"]
   },
+  "hostRequirements": {
+    "gpu": false
+  },
   "runArgs": [
     "--network=host",
-    "--privileged",
     "-e",
     "DISPLAY=${env:DISPLAY}",
     "-v",
@@ -22,5 +24,6 @@
       ]
     }
   },
-  "remoteUser": "root"
+  "remoteUser": "ubuntu",
+  "updateRemoteUserUID": true
 }

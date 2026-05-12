@@ -2,6 +2,8 @@
 # during the 'apt-get' phase, which previously caused network timeouts and MTU bridge issues.
 FROM osrf/ros:jazzy-desktop-full
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Install essential C++ build tools and ROS2 dependency managers (including rosdep).
 RUN apt-get update && apt-get install -y \
     python3-colcon-common-extensions \
@@ -40,7 +42,7 @@ RUN git clone --branch ${XRCE_DDS_VERSION} --depth 1 \
 
 # Automatically source the ROS2 environment variables every time a new terminal is opened.
 # This prevents the "command not found" error for ros2 CLI tools.
-RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc
+RUN echo "source /opt/ros/jazzy/setup.bash" >> /etc/bash.bashrc
 
 # --- NEW MILESTONE: ArduPilot Gazebo Plugin & SITL ---
 # We install BOTH the plugin and the pre-compiled SITL binary inside the container.
@@ -74,5 +76,5 @@ RUN git clone https://github.com/ArduPilot/ardupilot_gazebo.git /opt/ardupilot_g
     && make -j$(nproc)
 
 # 4. Export Gazebo plugin and resource paths so 'gz sim' can discover them automatically.
-RUN echo 'export GZ_SIM_SYSTEM_PLUGIN_PATH=/opt/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}' >> /root/.bashrc \
-    && echo 'export GZ_SIM_RESOURCE_PATH=/opt/ardupilot_gazebo/models:/opt/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}' >> /root/.bashrc
+ENV GZ_SIM_SYSTEM_PLUGIN_PATH=/opt/ardupilot_gazebo/build
+ENV GZ_SIM_RESOURCE_PATH=/opt/ardupilot_gazebo/models:/opt/ardupilot_gazebo/worlds
