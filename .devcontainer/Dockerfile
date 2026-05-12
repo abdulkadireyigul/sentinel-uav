@@ -19,13 +19,24 @@ RUN rosdep init || true \
 # --- NEW MILESTONE: Micro XRCE-DDS Agent ---
 # We compile and install the DDS Agent from source. 
 # This acts as the direct broker between ArduPilot's native DDS publisher and our ROS2 network.
-RUN git clone https://github.com/eProsima/Micro-XRCE-DDS-Agent.git /opt/Micro-XRCE-DDS-Agent \
+#
+# Version is pinned via ARG to ensure reproducible builds.
+# '--depth 1' skips full git history to reduce build time and image size.
+# '-j$(nproc)' parallelizes compilation across all available CPU cores.
+ARG XRCE_DDS_VERSION=v2.4.3
+RUN git clone --branch ${XRCE_DDS_VERSION} --depth 1 \
+    https://github.com/eProsima/Micro-XRCE-DDS-Agent.git \
+    /opt/Micro-XRCE-DDS-Agent \
     && cd /opt/Micro-XRCE-DDS-Agent \
     && mkdir build && cd build \
     && cmake .. \
-    && make \
+    && make -j$(nproc) \
     && make install \
     && ldconfig
+
+# Note on Workspace: We DO NOT explicitly create a /ros2_ws here.
+# VS Code DevContainers automatically mounts the host's project folder to /workspaces/sentinel-uav
+# Creating a separate workspace would break local-to-container code synchronization.
 
 # Automatically source the ROS2 environment variables every time a new terminal is opened.
 # This prevents the "command not found" error for ros2 CLI tools.
