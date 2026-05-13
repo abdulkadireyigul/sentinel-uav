@@ -18,23 +18,20 @@ RUN apt-get update && apt-get install -y \
 RUN rosdep init || true \
     && rosdep update || true
 
-# --- Micro XRCE-DDS Agent ---
-# We compile and install the DDS Agent from source. 
-# This acts as the direct broker between ArduPilot's native DDS publisher and our ROS2 network.
+# --- MAVROS ---
+# MAVROS is the ROS 2 bridge between MAVLink (ArduPilot SITL) and the ROS 2 graph.
+# It translates MAVLink telemetry and commands into standard ROS 2 topics and services,
+# allowing our C++ nodes to control the vehicle without a custom MAVLink implementation.
 #
-# Version is pinned via ARG to ensure reproducible builds.
-# '--depth 1' skips full git history to reduce build time and image size.
-# '-j$(nproc)' parallelizes compilation across all available CPU cores.
-ARG XRCE_DDS_VERSION=v2.4.3
-RUN git clone --branch ${XRCE_DDS_VERSION} --depth 1 \
-    https://github.com/eProsima/Micro-XRCE-DDS-Agent.git \
-    /opt/Micro-XRCE-DDS-Agent \
-    && cd /opt/Micro-XRCE-DDS-Agent \
-    && mkdir build && cd build \
-    && cmake .. \
-    && make -j$(nproc) \
-    && make install \
-    && ldconfig
+# 'mavros-extras' provides additional plugins (e.g. visual odometry, companion process status).
+RUN apt-get update && apt-get install -y \
+    ros-jazzy-mavros \
+    ros-jazzy-mavros-extras \
+    && rm -rf /var/lib/apt/lists/*
+
+# GeographicLib datasets are required by MAVROS for geodetic transformations (e.g. EKF origin).
+# install_geographiclib_datasets.sh is bundled with the mavros package.
+RUN /opt/ros/jazzy/lib/mavros/install_geographiclib_datasets.sh
 
 # Note on Workspace: We DO NOT explicitly create a /ros2_ws here.
 # VS Code DevContainers automatically mounts the host's project folder to /workspaces/sentinel-uav
@@ -44,7 +41,7 @@ RUN git clone --branch ${XRCE_DDS_VERSION} --depth 1 \
 # This prevents the "command not found" error for ros2 CLI tools.
 RUN echo "source /opt/ros/jazzy/setup.bash" >> /etc/bash.bashrc
 
-# --- NEW MILESTONE: ArduPilot Gazebo Plugin & SITL ---
+# --- ArduPilot Gazebo Plugin & SITL ---
 # We install BOTH the plugin and the pre-compiled SITL binary inside the container.
 # Keeping SITL inside ensures our DevContainer remains 100% self-contained and reproducible,
 # avoiding the need for host-machine installations.
