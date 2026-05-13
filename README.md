@@ -8,15 +8,15 @@ The first goal is not autonomy. The first goal is a reproducible simulation foun
 
 The development environment is a VS Code Dev Container based on Ubuntu Noble and ROS 2 Jazzy.
 
-| Component | Current choice |
-| --- | --- |
-| OS | Ubuntu 24.04 Noble |
-| ROS 2 | Jazzy |
-| Simulator | Gazebo Harmonic / `gz-sim8` |
-| Flight stack | ArduPilot ArduCopter SITL |
-| ROS-DDS bridge | Micro XRCE-DDS Agent `v2.4.3` |
+| Component          | Current choice                                                          |
+| ------------------ | ----------------------------------------------------------------------- |
+| OS                 | Ubuntu 24.04 Noble                                                      |
+| ROS 2              | Jazzy                                                                   |
+| Simulator          | Gazebo Harmonic / `gz-sim8`                                             |
+| Flight stack       | ArduPilot ArduCopter SITL                                               |
+| ROS-DDS bridge     | Micro XRCE-DDS Agent `v2.4.3`                                           |
 | Gazebo integration | `ardupilot_gazebo` pinned to `082a0fe231f6e63bc8d1598f1cba461d9e2ea7f5` |
-| Main language | C++ |
+| Main language      | C++                                                                     |
 
 ## Architecture
 
@@ -107,9 +107,49 @@ Expected package discovery:
 sentinel_uav_core    src/sentinel_uav_core    (ros.ament_cmake)
 ```
 
+## Running the Simulation
+
+Open four terminals inside the Dev Container and run each command in order.
+
+**Terminal 1 — Gazebo:**
+
+```bash
+gz sim -v4 -r iris_runway.sdf
+```
+
+**Terminal 2 — ArduCopter SITL:**
+
+```bash
+arducopter --model JSON --defaults /opt/ardupilot_gazebo/config/gazebo-iris-gimbal.parm -I0
+```
+
+> `--model JSON` is required. The `ardupilot_gazebo` plugin uses the JSON backend protocol.
+> Using `--model gazebo-iris` produces `Incorrect protocol magic` errors and no physics connection.
+
+**Terminal 3 — Micro XRCE-DDS Agent:**
+
+```bash
+MicroXRCEAgent udp4 -p 2019
+```
+
+**Terminal 4 — MAVProxy (manual GCS for validation):**
+
+```bash
+mavproxy.py --master tcp:127.0.0.1:5760
+```
+
+Basic flight validation sequence:
+
+```
+mode guided
+arm throttle
+takeoff 10
+mode land
+```
+
 ## Next Milestones
 
-1. Add a minimal Gazebo + ArduPilot SITL launch path.
+1. ~~Add a minimal Gazebo + ArduPilot SITL launch path.~~ ✅
 2. Start Micro XRCE-DDS Agent and verify ROS 2 topics from SITL.
 3. Add a small C++ observer node for vehicle health/state.
 4. Add the first simple control milestone: arm, take off, land.
