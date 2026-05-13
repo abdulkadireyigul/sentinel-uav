@@ -51,7 +51,9 @@ RUN echo "source /opt/ros/jazzy/setup.bash" >> /etc/bash.bashrc
 
 # 1. Add the official Gazebo repository to get the Harmonic development headers, then install dependencies.
 # We also include GStreamer development packages because the ardupilot_gazebo plugin explicitly requires them to compile.
-RUN apt-get update && apt-get install -y wget curl gnupg lsb-release \
+# MAVProxy and its dependencies (pymavlink, future, empy) are included here as the primary GCS tool
+# for manual validation, arming, and flight testing during development.
+RUN apt-get update && apt-get install -y wget curl gnupg lsb-release python3-pip \
     && curl -sSL https://packages.osrfoundation.org/gazebo.gpg -o /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable noble main" | tee /etc/apt/sources.list.d/gazebo-stable.list \
     && apt-get update \
@@ -60,9 +62,21 @@ RUN apt-get update && apt-get install -y wget curl gnupg lsb-release \
     rapidjson-dev \
     libgstreamer1.0-dev \
     libgstreamer-plugins-base1.0-dev \
+    && pip3 install --break-system-packages \
+    future \
+    empy \
+    pymavlink \
+    MAVProxy \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Download the pre-compiled ArduCopter SITL binary for rapid startup without bloating build times.
+#
+# IMPORTANT: This binary must be launched with '--model JSON', not '--model gazebo-iris'.
+# The ardupilot_gazebo plugin uses the JSON backend protocol. Using the legacy binary
+# protocol produces "Incorrect protocol magic" errors and no Gazebo connection.
+#
+# Verified launch command:
+#   arducopter --model JSON --defaults /opt/ardupilot_gazebo/config/gazebo-iris-gimbal.parm -I0
 RUN wget https://firmware.ardupilot.org/Copter/stable/SITL_x86_64_linux_gnu/arducopter -O /usr/local/bin/arducopter \
     && chmod +x /usr/local/bin/arducopter
 
@@ -76,5 +90,7 @@ RUN git clone https://github.com/ArduPilot/ardupilot_gazebo.git /opt/ardupilot_g
     && make -j$(nproc)
 
 # 4. Export Gazebo plugin and resource paths so 'gz sim' can discover them automatically.
-ENV GZ_SIM_SYSTEM_PLUGIN_PATH=/opt/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}
-ENV GZ_SIM_RESOURCE_PATH=/opt/ardupilot_gazebo/models:/opt/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}
+# Note: We intentionally do not chain ${GZ_SIM_SYSTEM_PLUGIN_PATH} here as it is undefined
+# at build time. A single plugin path is sufficient for this project.
+ENV GZ_SIM_SYSTEM_PLUGIN_PATH=/opt/ardupilot_gazebo/build
+ENV GZ_SIM_RESOURCE_PATH=/opt/ardupilot_gazebo/models:/opt/ardupilot_gazebo/worlds
