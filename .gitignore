@@ -81,3 +81,13 @@ Testing/
 .idea/
 *.swp
 *.swo
+
+# ArduPilot SITL runtime files
+eeprom.bin
+terrain/
+logs/
+
+# MAVProxy session files
+mav.parm
+mav.tlog
+mav.tlog.raw
