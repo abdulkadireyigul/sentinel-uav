@@ -76,5 +76,5 @@ RUN git clone https://github.com/ArduPilot/ardupilot_gazebo.git /opt/ardupilot_g
     && make -j$(nproc)
 
 # 4. Export Gazebo plugin and resource paths so 'gz sim' can discover them automatically.
-ENV GZ_SIM_SYSTEM_PLUGIN_PATH=/opt/ardupilot_gazebo/build
-ENV GZ_SIM_RESOURCE_PATH=/opt/ardupilot_gazebo/models:/opt/ardupilot_gazebo/worlds
+ENV GZ_SIM_SYSTEM_PLUGIN_PATH=/opt/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}
+ENV GZ_SIM_RESOURCE_PATH=/opt/ardupilot_gazebo/models:/opt/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}

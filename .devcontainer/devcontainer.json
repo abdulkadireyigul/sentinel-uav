@@ -5,10 +5,11 @@
     "options": ["--network=host"]
   },
   "hostRequirements": {
-    "gpu": false
+    "gpu": "optional"
   },
   "runArgs": [
     "--network=host",
+    "--device=/dev/dri",
     "-e",
     "DISPLAY=${env:DISPLAY}",
     "-v",
