@@ -1,6 +1,6 @@
 # sentinel-uav
 
-Sentinel UAV is a hobby robotics project for learning production-minded UAV software with ROS 2, Gazebo, ArduPilot SITL, C++, and DDS.
+Sentinel UAV is a hobby robotics project for learning production-minded UAV software with ROS 2, Gazebo, ArduPilot SITL, and C++.
 
 The first goal is not autonomy. The first goal is a reproducible simulation foundation that can be rebuilt, inspected, and explained clearly.
 
@@ -14,7 +14,7 @@ The development environment is a VS Code Dev Container based on Ubuntu Noble and
 | ROS 2              | Jazzy                                                                   |
 | Simulator          | Gazebo Harmonic / `gz-sim8`                                             |
 | Flight stack       | ArduPilot ArduCopter SITL                                               |
-| ROS-DDS bridge     | Micro XRCE-DDS Agent `v2.4.3`                                           |
+| ROS 2 bridge       | MAVROS (`ros-jazzy-mavros`)                                             |
 | Gazebo integration | `ardupilot_gazebo` pinned to `082a0fe231f6e63bc8d1598f1cba461d9e2ea7f5` |
 | Main language      | C++                                                                     |
 
@@ -29,16 +29,13 @@ Gazebo Harmonic world/model
 ardupilot_gazebo plugin
         |
         v
-ArduPilot ArduCopter SITL
-        |
-        v
-Micro XRCE-DDS Agent
-        |
-        v
-ROS 2 Jazzy graph
-        |
-        v
-Sentinel UAV C++ nodes
+ArduPilot ArduCopter SITL  <--MAVLink-->  MAVROS
+                                               |
+                                               v
+                                        ROS 2 Jazzy graph
+                                               |
+                                               v
+                                    Sentinel UAV C++ nodes
 ```
 
 This repository currently contains the environment and an empty starter ROS 2 package:
@@ -62,7 +59,7 @@ The container is configured to:
 - run as the non-root `ubuntu` user
 - avoid requiring a GPU
 - avoid blanket `--privileged` mode
-- use host networking for ROS 2 / DDS / SITL discovery during early development
+- use host networking for ROS 2 / MAVLink / SITL discovery during early development
 - expose Gazebo plugin and resource paths for `ardupilot_gazebo`
 
 ## Smoke Checks
@@ -81,10 +78,10 @@ Check Gazebo:
 gz sim --versions
 ```
 
-Check Micro XRCE-DDS Agent:
+Check MAVROS:
 
 ```bash
-MicroXRCEAgent --help | head -n 3
+ros2 pkg prefix mavros
 ```
 
 Check ArduCopter SITL:
@@ -126,19 +123,26 @@ arducopter --model JSON --defaults /opt/ardupilot_gazebo/config/gazebo-iris-gimb
 > `--model JSON` is required. The `ardupilot_gazebo` plugin uses the JSON backend protocol.
 > Using `--model gazebo-iris` produces `Incorrect protocol magic` errors and no physics connection.
 
-**Terminal 3 — Micro XRCE-DDS Agent:**
+**Terminal 3 — MAVROS:**
 
 ```bash
-MicroXRCEAgent udp4 -p 2019
+ros2 run mavros mavros_node --ros-args \
+  -p fcu_url:=tcp://127.0.0.1:5760 \
+  -p gcs_url:=udp://@127.0.0.1:14550 \
+  -p tgt_system:=1 \
+  -p tgt_component:=1
 ```
 
 **Terminal 4 — MAVProxy (manual GCS for validation):**
 
 ```bash
-mavproxy.py --master tcp:127.0.0.1:5760
+mavproxy.py --master tcp:127.0.0.1:5760 --out udp:127.0.0.1:14550
 ```
 
-Basic flight validation sequence:
+> `--out udp:127.0.0.1:14550` forwards MAVLink to MAVROS on port 14550.
+> Both MAVProxy and MAVROS can be active simultaneously this way.
+
+Basic flight validation sequence (in MAVProxy):
 
 ```
 mode guided
@@ -147,10 +151,17 @@ takeoff 10
 mode land
 ```
 
+Verify MAVROS topics are live:
+
+```bash
+ros2 topic list | grep mavros
+ros2 topic echo /mavros/state
+```
+
 ## Next Milestones
 
 1. ~~Add a minimal Gazebo + ArduPilot SITL launch path.~~ ✅
-2. Start Micro XRCE-DDS Agent and verify ROS 2 topics from SITL.
+2. ~~Select and integrate ROS 2 bridge (MAVROS over MAVLink).~~ ✅
 3. Add a small C++ observer node for vehicle health/state.
-4. Add the first simple control milestone: arm, take off, land.
+4. Add the first simple control milestone: arm, take off, land via ROS 2.
 5. Build mission behavior after the basic loop is observable and testable.
