@@ -161,6 +161,10 @@ Status: Completed (v0.1)
 
 - Safe arm/takeoff/land primitives with preconditions and timeouts.
 - Guided goto waypoint primitive.
+- Abort hook skeleton implemented: /sentinel/mission/abort -> hold then land flow trigger.
+- Abort status model hardened with explicit stage transitions and timeout diagnostics.
+
+Status: In Progress (v0.1)
 
 ## M3 - Mission FSM V1
 
@@ -212,3 +216,5 @@ Status: Completed (v0.1)
 - 2026-05-18: Initial mission roadmap drafted as v0.1-draft.
 - 2026-05-18: Baseline numeric parameters accepted and added.
 - 2026-05-18: Marked M0 and M1 as completed and aligned observer payload wording.
+- 2026-05-18: Started M2 with control_node abort hook skeleton and runtime smoke check.
+- 2026-05-18: Hardened M2 abort status flow with deterministic state transitions and bounded request timeouts.

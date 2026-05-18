@@ -41,7 +41,7 @@ This document defines how mission acceptance criteria are validated and what evi
 | TC-04 | Red Ball Detection | TC-03 complete + visible red target | Run detector during scan | Detection confidence >=0.75 and false positives <=10 percent | detection topic/log + sample frames | Planned |
 | TC-05 | Visual Approach | TC-04 complete | Execute approach controller | Stop at sqrt(2) m total with ~1.0 m horiz and ~1.0 m vertical components (+/-0.2 m tolerance) | distance estimate log + stop event | Planned |
 | TC-06 | Wait and Return/Land | TC-05 complete | Hold 10 s then return and land | Hold completed; vehicle lands at home area | hold timer log + landing confirmation | Planned |
-| TC-07 | Abort Hold->Land | Trigger from each mission state | Send abort | Immediate transition to Hold then Land from any state; FCU loss >2.0 s also triggers abort path | mission transition logs + land confirmation | Planned |
+| TC-07 | Abort Hold->Land | Trigger from each mission state | Send abort; capture `/sentinel/mission/abort_status` sequence | Sequence includes `abort_requested -> hold_requested -> (hold_succeeded|hold_failed) -> land_requested -> (land_succeeded|land_failed) -> (abort_completed|abort_failed)` and terminates within timeout budget; FCU loss >2.0 s also triggers abort path | abort_status topic log + mission transition logs + land confirmation | Planned |
 
 ## Run Log Template
 
@@ -64,3 +64,4 @@ Use this template for each test run:
 
 - 2026-05-18: Initial acceptance matrix draft created.
 - 2026-05-18: Added accepted v0.1 numeric tolerances, confidence, and run targets.
+- 2026-05-18: Refined TC-07 with deterministic abort status sequence and timeout-aware evidence.

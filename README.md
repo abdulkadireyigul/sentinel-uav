@@ -170,6 +170,79 @@ source install/setup.bash
 ros2 launch sentinel_uav_bringup m0_m1_bringup.launch.py
 ```
 
+Run Sentinel M2 control skeleton (includes abort hook):
+
+```bash
+cd /workspaces/sentinel-uav
+colcon build
+source install/setup.bash
+
+ros2 launch sentinel_uav_bringup m2_control_abort.launch.py
+```
+
+### M2 Abort Hook: What It Does and How to Test It
+
+Purpose:
+
+- This is an immediate safety path for mission cancellation.
+- When `/sentinel/mission/abort` receives `true`, `control_node` starts a Hold -> Land flow.
+- The flow progress is published on `/sentinel/mission/abort_status` for observability and test evidence.
+
+Expected behavior:
+
+- If Hold and Land services are available, status should move to `abort_completed`.
+- If services are unavailable or timeout, status should move to `abort_failed`.
+- A second abort trigger while one is active should publish `abort_ignored_in_progress`.
+
+Status sequence contract:
+
+- Main sequence:
+        - `abort_requested -> hold_requested -> (hold_succeeded|hold_failed) -> land_requested -> (land_succeeded|land_failed) -> (abort_completed|abort_failed)`
+- Diagnostic events may also appear:
+        - `hold_service_unavailable`, `hold_request_timeout`, `hold_request_exception`, `hold_command_rejected`
+        - `land_service_unavailable`, `land_request_timeout`, `land_request_exception`, `land_command_rejected`
+
+Quick test (failure path, without MAVROS services):
+
+Terminal A:
+
+```bash
+cd /workspaces/sentinel-uav
+source install/setup.bash
+ros2 launch sentinel_uav_bringup m2_control_abort.launch.py
+```
+
+Terminal B:
+
+```bash
+cd /workspaces/sentinel-uav
+source install/setup.bash
+ros2 topic echo /sentinel/mission/abort_status
+```
+
+Terminal C:
+
+```bash
+cd /workspaces/sentinel-uav
+source install/setup.bash
+ros2 topic pub --once /sentinel/mission/abort std_msgs/msg/Bool '{data: true}'
+```
+
+Typical output in this case:
+
+- `abort_requested`
+- `hold_requested`
+- `hold_service_unavailable`
+- `hold_failed`
+- `land_requested`
+- `land_service_unavailable`
+- `land_failed`
+- `abort_failed`
+
+Success-path expectation (with MAVROS services ready):
+
+- You should see the same start, then `hold_succeeded`, `land_succeeded`, and final `abort_completed`.
+
 ## Next Milestones
 
 1. ~~Add a minimal Gazebo + ArduPilot SITL launch path.~~ ✅

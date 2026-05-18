@@ -24,7 +24,7 @@ This document defines node-level communication contracts for Sentinel UAV.
 
 - bringup_orchestrator (implemented)
 - observer_node (implemented)
-- control_node (planned)
+- control_node (implemented, M2 abort hook skeleton)
 - mission_fsm_node (planned)
 - red_ball_detector_node (planned)
 - visual_approach_node (planned)
@@ -76,8 +76,28 @@ This document defines node-level communication contracts for Sentinel UAV.
 ### /sentinel/mission/abort
 
 - Direction: subscribe/service
-- Owner: mission_fsm_node
+- Owner: control_node (current), mission_fsm_node (future owner)
 - Purpose: trigger Hold -> Land from any state
+
+### /sentinel/mission/abort_status
+
+- Direction: publish
+- Owner: control_node
+- Purpose: emit deterministic abort flow stage with bounded request handling
+- v0.1 state vocabulary:
+	- `abort_requested`
+	- `hold_requested`
+	- `hold_succeeded` or `hold_failed`
+	- `land_requested`
+	- `land_succeeded` or `land_failed`
+	- `abort_completed` or `abort_failed`
+- v0.1 event statuses (non-state diagnostics):
+	- `abort_ignored_in_progress`
+	- `hold_service_unavailable`, `hold_request_timeout`, `hold_request_exception`, `hold_command_rejected`
+	- `land_service_unavailable`, `land_request_timeout`, `land_request_exception`, `land_command_rejected`
+	- `abort_transition_invalid`
+- Valid transition path:
+	- `abort_requested -> hold_requested -> (hold_succeeded|hold_failed) -> land_requested -> (land_succeeded|land_failed) -> (abort_completed|abort_failed)`
 
 ## Reliability Requirements
 
@@ -121,3 +141,5 @@ This document defines node-level communication contracts for Sentinel UAV.
 - 2026-05-18: Initial interface contract draft created.
 - 2026-05-18: Added accepted v0.1 numeric runtime and safety constraints.
 - 2026-05-18: Marked M0/M1 interfaces as implemented and runtime-validated.
+- 2026-05-18: Added M2 control_node abort hook interfaces.
+- 2026-05-18: Hardened abort status contract with explicit state vocabulary and valid transition path.
