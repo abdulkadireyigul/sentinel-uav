@@ -2,7 +2,9 @@
 #include <string>
 #include <chrono>
 #include <functional>
+#include <cmath>
 
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <mavros_msgs/msg/state.hpp>
 #include <mavros_msgs/srv/command_bool.hpp>
 #include <mavros_msgs/srv/command_tol.hpp>
@@ -23,14 +25,22 @@ public:
 
     arm_request_timeout_sec_ = declare_parameter<double>("arm_request_timeout_sec", 8.0);
     takeoff_request_timeout_sec_ = declare_parameter<double>("takeoff_request_timeout_sec", 30.0);
+    goto_request_timeout_sec_ = declare_parameter<double>("goto_request_timeout_sec", 120.0);
     hold_request_timeout_sec_ = declare_parameter<double>("hold_request_timeout_sec", 5.0);
     land_request_timeout_sec_ = declare_parameter<double>("land_request_timeout_sec", 8.0);
     service_wait_timeout_sec_ = declare_parameter<double>("service_wait_timeout_sec", 0.5);
     fcu_state_stale_sec_ = declare_parameter<double>("fcu_state_stale_sec", 2.0);
+    pose_stale_sec_ = declare_parameter<double>("pose_stale_sec", 1.0);
+    goto_position_tolerance_m_ = declare_parameter<double>("goto_position_tolerance_m", 2.0);
+    goto_setpoint_rate_hz_ = declare_parameter<double>("goto_setpoint_rate_hz", 10.0);
 
     state_sub_ = create_subscription<mavros_msgs::msg::State>(
       "/mavros/state", 10,
       std::bind(&ControlNode::state_callback, this, std::placeholders::_1));
+
+    pose_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
+      "/mavros/local_position/pose", rclcpp::SensorDataQoS(),
+      std::bind(&ControlNode::pose_callback, this, std::placeholders::_1));
 
     arm_sub_ = create_subscription<std_msgs::msg::Bool>(
       "/sentinel/control/arm", 10,
@@ -39,6 +49,10 @@ public:
     takeoff_sub_ = create_subscription<std_msgs::msg::Float64>(
       "/sentinel/control/takeoff_altitude", 10,
       std::bind(&ControlNode::takeoff_callback, this, std::placeholders::_1));
+
+    goto_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
+      "/sentinel/control/goto_local_pose", 10,
+      std::bind(&ControlNode::goto_callback, this, std::placeholders::_1));
 
     land_sub_ = create_subscription<std_msgs::msg::Bool>(
       "/sentinel/control/land", 10,
@@ -50,6 +64,9 @@ public:
 
     control_status_pub_ = create_publisher<std_msgs::msg::String>(
       "/sentinel/control/status", 10);
+
+    goto_setpoint_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>(
+      "/mavros/setpoint_position/local", 10);
 
     abort_status_pub_ = create_publisher<std_msgs::msg::String>(
       "/sentinel/mission/abort_status", 10);
@@ -82,6 +99,13 @@ private:
     last_state_ = *msg;
     last_state_stamp_ = now();
     has_state_ = true;
+  }
+
+  void pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
+  {
+    last_pose_ = *msg;
+    last_pose_stamp_ = now();
+    has_pose_ = true;
   }
 
   void arm_callback(const std_msgs::msg::Bool::SharedPtr msg)
@@ -153,12 +177,42 @@ private:
     arm_control_timeout_timer("takeoff", takeoff_request_timeout_sec_, "takeoff_request_timeout");
 
     ensure_guided_mode_then(
+      "takeoff",
       [this, altitude](bool ok) {
         if (!ok) {
           finish_control_command(false, "takeoff_mode_set_failed");
           return;
         }
         send_takeoff_request(altitude);
+      });
+  }
+
+  void goto_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
+  {
+    if (!begin_control_command("goto")) {
+      return;
+    }
+
+    if (!last_state_.armed) {
+      finish_control_command(false, "goto_precondition_not_armed");
+      return;
+    }
+
+    if (!pose_ready("goto")) {
+      finish_control_command(false, "goto_precondition_pose_unavailable");
+      return;
+    }
+
+    arm_control_timeout_timer("goto", goto_request_timeout_sec_, "goto_request_timeout");
+
+    ensure_guided_mode_then(
+      "goto",
+      [this, msg](bool ok) {
+        if (!ok) {
+          finish_control_command(false, "goto_mode_set_failed");
+          return;
+        }
+        start_goto_command(*msg);
       });
   }
 
@@ -340,6 +394,7 @@ private:
 
   void finish_control_command(bool success, const std::string & status)
   {
+    stop_goto_publisher();
     publish_control_status(status);
     control_command_in_progress_ = false;
     control_command_name_.clear();
@@ -357,6 +412,7 @@ private:
     }
 
     publish_control_status("control_command_preempted_by_abort");
+    stop_goto_publisher();
     control_command_in_progress_ = false;
     control_command_name_.clear();
     cancel_timer(control_timeout_timer_);
@@ -387,6 +443,21 @@ private:
     return true;
   }
 
+  bool pose_ready(const std::string & command_name)
+  {
+    if (!has_pose_) {
+      publish_control_status(command_name + "_precondition_no_pose");
+      return false;
+    }
+
+    if ((now() - last_pose_stamp_) > rclcpp::Duration::from_seconds(pose_stale_sec_)) {
+      publish_control_status(command_name + "_precondition_pose_stale");
+      return false;
+    }
+
+    return true;
+  }
+
   void arm_control_timeout_timer(
     const std::string & command_name,
     double timeout_sec,
@@ -404,7 +475,9 @@ private:
       });
   }
 
-  void ensure_guided_mode_then(const std::function<void(bool)> & on_done)
+  void ensure_guided_mode_then(
+    const std::string & command_name,
+    const std::function<void(bool)> & on_done)
   {
     if (last_state_.mode == guided_mode_) {
       on_done(true);
@@ -412,7 +485,7 @@ private:
     }
 
     if (!set_mode_client_->wait_for_service(to_duration(service_wait_timeout_sec_))) {
-      publish_control_status("takeoff_set_mode_service_unavailable");
+      publish_control_status(command_name + "_set_mode_service_unavailable");
       on_done(false);
       return;
     }
@@ -422,26 +495,74 @@ private:
 
     set_mode_client_->async_send_request(
       req,
-      [this, on_done](rclcpp::Client<mavros_msgs::srv::SetMode>::SharedFuture future) {
-        if (!is_active_control_command("takeoff")) {
+      [this, command_name,
+      on_done](rclcpp::Client<mavros_msgs::srv::SetMode>::SharedFuture future) {
+        if (!is_active_control_command(command_name)) {
           return;
         }
 
         try {
           const auto response = future.get();
           if (response->mode_sent) {
-            publish_control_status("takeoff_guided_mode_set");
+            publish_control_status(command_name + "_guided_mode_set");
             on_done(true);
             return;
           }
-          publish_control_status("takeoff_guided_mode_rejected");
+          publish_control_status(command_name + "_guided_mode_rejected");
         } catch (const std::exception & ex) {
-          RCLCPP_ERROR(get_logger(), "takeoff set_mode failed: %s", ex.what());
-          publish_control_status("takeoff_guided_mode_exception");
+          RCLCPP_ERROR(get_logger(), "%s set_mode failed: %s", command_name.c_str(), ex.what());
+          publish_control_status(command_name + "_guided_mode_exception");
         }
 
         on_done(false);
       });
+  }
+
+  void start_goto_command(const geometry_msgs::msg::PoseStamped & target)
+  {
+    if (!is_active_control_command("goto")) {
+      return;
+    }
+
+    goto_target_ = target;
+    publish_control_status("goto_active");
+
+    stop_goto_publisher();
+
+    double period_sec = 0.1;
+    if (goto_setpoint_rate_hz_ > 0.0) {
+      period_sec = 1.0 / goto_setpoint_rate_hz_;
+    }
+
+    goto_setpoint_timer_ = create_wall_timer(
+      to_duration(period_sec),
+      [this]() {
+        if (!is_active_control_command("goto")) {
+          stop_goto_publisher();
+          return;
+        }
+
+        goto_setpoint_pub_->publish(goto_target_);
+
+        if (!pose_ready("goto")) {
+          finish_control_command(false, "goto_precondition_pose_unavailable");
+          return;
+        }
+
+        const auto dx = goto_target_.pose.position.x - last_pose_.pose.position.x;
+        const auto dy = goto_target_.pose.position.y - last_pose_.pose.position.y;
+        const auto dz = goto_target_.pose.position.z - last_pose_.pose.position.z;
+        const auto distance = std::sqrt(dx * dx + dy * dy + dz * dz);
+
+        if (distance <= goto_position_tolerance_m_) {
+          finish_control_command(true, "goto_succeeded");
+        }
+      });
+  }
+
+  void stop_goto_publisher()
+  {
+    cancel_timer(goto_setpoint_timer_);
   }
 
   void send_takeoff_request(double altitude)
@@ -620,14 +741,22 @@ private:
 
   double arm_request_timeout_sec_{8.0};
   double takeoff_request_timeout_sec_{30.0};
+  double goto_request_timeout_sec_{120.0};
   double hold_request_timeout_sec_{5.0};
   double land_request_timeout_sec_{8.0};
   double service_wait_timeout_sec_{0.5};
   double fcu_state_stale_sec_{2.0};
+  double pose_stale_sec_{1.0};
+  double goto_position_tolerance_m_{2.0};
+  double goto_setpoint_rate_hz_{10.0};
 
   bool has_state_{false};
   mavros_msgs::msg::State last_state_;
   rclcpp::Time last_state_stamp_{0, 0, RCL_ROS_TIME};
+  bool has_pose_{false};
+  geometry_msgs::msg::PoseStamped last_pose_;
+  rclcpp::Time last_pose_stamp_{0, 0, RCL_ROS_TIME};
+  geometry_msgs::msg::PoseStamped goto_target_;
 
   bool control_command_in_progress_{false};
   std::string control_command_name_;
@@ -635,13 +764,16 @@ private:
   AbortState abort_state_{AbortState::Idle};
 
   rclcpp::Subscription<mavros_msgs::msg::State>::SharedPtr state_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr arm_sub_;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr takeoff_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goto_sub_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr land_sub_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr abort_sub_;
 
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr control_status_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr abort_status_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr goto_setpoint_pub_;
 
   rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedPtr arm_client_;
   rclcpp::Client<mavros_msgs::srv::SetMode>::SharedPtr set_mode_client_;
@@ -649,6 +781,7 @@ private:
   rclcpp::Client<mavros_msgs::srv::CommandTOL>::SharedPtr land_client_;
 
   rclcpp::TimerBase::SharedPtr control_timeout_timer_;
+  rclcpp::TimerBase::SharedPtr goto_setpoint_timer_;
   rclcpp::TimerBase::SharedPtr hold_timeout_timer_;
   rclcpp::TimerBase::SharedPtr land_timeout_timer_;
 };

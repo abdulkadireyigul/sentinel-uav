@@ -111,6 +111,12 @@ This document defines node-level communication contracts for Sentinel UAV.
 - Owner: control_node
 - Purpose: trigger takeoff primitive to requested altitude (meters)
 
+### /sentinel/control/goto_local_pose
+
+- Direction: subscribe
+- Owner: control_node
+- Purpose: trigger local-frame goto primitive to requested pose target
+
 ### /sentinel/control/land
 
 - Direction: subscribe
@@ -125,8 +131,10 @@ This document defines node-level communication contracts for Sentinel UAV.
 - v0.1 examples:
 	- `arm_requested`, `arm_succeeded`, `arm_request_timeout`
 	- `takeoff_requested`, `takeoff_guided_mode_set`, `takeoff_succeeded`
+	- `goto_requested`, `goto_active`, `goto_succeeded`, `goto_request_timeout`
 	- `land_requested`, `land_succeeded`
 	- `<command>_precondition_no_state`, `<command>_precondition_state_stale`, `<command>_precondition_fcu_disconnected`
+	- `<command>_precondition_no_pose`, `<command>_precondition_pose_stale`
 	- `<command>_rejected_busy`, `<command>_rejected_abort_in_progress`
 
 ## Reliability Requirements
@@ -174,3 +182,4 @@ This document defines node-level communication contracts for Sentinel UAV.
 - 2026-05-18: Added M2 control_node abort hook interfaces.
 - 2026-05-18: Hardened abort status contract with explicit state vocabulary and valid transition path.
 - 2026-05-18: Added M2 control primitive command/status interfaces for arm/takeoff/land.
+- 2026-05-18: Added M2 goto_local_pose interface and goto lifecycle status examples.

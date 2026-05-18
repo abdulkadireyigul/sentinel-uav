@@ -35,8 +35,8 @@ This document defines how mission acceptance criteria are validated and what evi
 
 | ID | Criterion | Setup | Procedure | Pass Condition | Required Evidence | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| TC-01 | Takeoff | SITL + MAVROS + mission/control stack up | Send takeoff command/state transition | Reach target altitude within +/-0.5 m and hold 10 s | altitude topic/log + state transition log | Planned |
-| TC-02 | Goto Target | TC-01 complete | Send goto target | Enter 2.0 m radius around target within timeout | pose topic/log + mission state log | Planned |
+| TC-01 | Takeoff | SITL + MAVROS + mission/control stack up | Send arm then publish `/sentinel/control/takeoff_altitude` | Reach target altitude within +/-0.5 m and hold 10 s | altitude topic/log + `/sentinel/control/status` log | Planned |
+| TC-02 | Goto Target | TC-01 complete | Publish `/sentinel/control/goto_local_pose` target | Enter 2.0 m radius around target within timeout | pose topic/log + `/sentinel/control/status` log | Planned |
 | TC-03 | Panoramic Scan | TC-02 complete | Run scan state | Complete 360 deg scan profile | yaw trend log + scan complete event | Planned |
 | TC-04 | Red Ball Detection | TC-03 complete + visible red target | Run detector during scan | Detection confidence >=0.75 and false positives <=10 percent | detection topic/log + sample frames | Planned |
 | TC-05 | Visual Approach | TC-04 complete | Execute approach controller | Stop at sqrt(2) m total with ~1.0 m horiz and ~1.0 m vertical components (+/-0.2 m tolerance) | distance estimate log + stop event | Planned |
@@ -65,3 +65,4 @@ Use this template for each test run:
 - 2026-05-18: Initial acceptance matrix draft created.
 - 2026-05-18: Added accepted v0.1 numeric tolerances, confidence, and run targets.
 - 2026-05-18: Refined TC-07 with deterministic abort status sequence and timeout-aware evidence.
+- 2026-05-18: Updated TC-01 and TC-02 procedures to use M2 control primitive interfaces.

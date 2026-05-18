@@ -243,12 +243,46 @@ Success-path expectation (with MAVROS services ready):
 
 - You should see the same start, then `hold_succeeded`, `land_succeeded`, and final `abort_completed`.
 
+### M2 Control Primitives: Quick Command Check
+
+With M2 launch running, these topics trigger control primitives:
+
+Arm:
+
+```bash
+ros2 topic pub --once /sentinel/control/arm std_msgs/msg/Bool '{data: true}'
+```
+
+Takeoff to 5 m:
+
+```bash
+ros2 topic pub --once /sentinel/control/takeoff_altitude std_msgs/msg/Float64 '{data: 5.0}'
+```
+
+Goto local pose:
+
+```bash
+ros2 topic pub --once /sentinel/control/goto_local_pose geometry_msgs/msg/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: 5.0, y: 0.0, z: 5.0}, orientation: {w: 1.0}}}"
+```
+
+Land:
+
+```bash
+ros2 topic pub --once /sentinel/control/land std_msgs/msg/Bool '{data: true}'
+```
+
+Watch primitive status stream:
+
+```bash
+ros2 topic echo /sentinel/control/status
+```
+
 ## Next Milestones
 
 1. ~~Add a minimal Gazebo + ArduPilot SITL launch path.~~ ✅
 2. ~~Select and integrate ROS 2 bridge (MAVROS over MAVLink).~~ ✅
 3. ~~Add a small C++ observer node for vehicle health/state.~~ ✅
-4. Add the first simple control milestone: arm, take off, land via ROS 2.
+4. Harden control milestone: validate arm/takeoff/goto/land success-path end to end.
 5. Build mission behavior after the basic loop is observable and testable.
 
 ## Planning Documents

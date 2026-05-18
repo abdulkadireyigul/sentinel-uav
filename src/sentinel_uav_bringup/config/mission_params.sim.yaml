@@ -14,8 +14,12 @@ control_node:
     guided_mode: GUIDED
     arm_request_timeout_sec: 8.0
     takeoff_request_timeout_sec: 30.0
+    goto_request_timeout_sec: 120.0
     hold_mode: BRAKE
     hold_request_timeout_sec: 5.0
     land_request_timeout_sec: 8.0
     service_wait_timeout_sec: 0.5
     fcu_state_stale_sec: 2.0
+    pose_stale_sec: 1.0
+    goto_position_tolerance_m: 2.0
+    goto_setpoint_rate_hz: 10.0
