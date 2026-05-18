@@ -7,7 +7,7 @@ This document defines node-level communication contracts for Sentinel UAV.
 - Version: v0.1-draft
 - Status: Draft
 - Last updated: 2026-05-18
-- Validation state: Not yet runtime-validated
+- Validation state: Runtime-validated for M0/M1 bringup and observer topics
 
 ## Contract Change Policy
 
@@ -22,12 +22,17 @@ This document defines node-level communication contracts for Sentinel UAV.
 
 ## Planned Nodes (Phase 1)
 
-- bringup_orchestrator (planned)
-- observer_node (planned)
+- bringup_orchestrator (implemented)
+- observer_node (implemented)
 - control_node (planned)
 - mission_fsm_node (planned)
 - red_ball_detector_node (planned)
 - visual_approach_node (planned)
+
+## Package Ownership (v0.1)
+
+- sentinel_uav_bringup: launch/config and bringup_orchestrator
+- sentinel_uav_core: observer and mission/control runtime nodes
 
 ## External Interfaces
 
@@ -58,7 +63,8 @@ This document defines node-level communication contracts for Sentinel UAV.
 - Direction: publish
 - Owner: observer_node
 - Purpose: expose readiness, warning, and fault summary
-- Suggested message: diagnostic_msgs/DiagnosticArray or custom health message
+- Current v0.1 payload: std_msgs/String with JSON body
+- Planned future format: diagnostic_msgs/DiagnosticArray or custom health message
 
 ### /sentinel/target/red_ball
 
@@ -114,3 +120,4 @@ This document defines node-level communication contracts for Sentinel UAV.
 
 - 2026-05-18: Initial interface contract draft created.
 - 2026-05-18: Added accepted v0.1 numeric runtime and safety constraints.
+- 2026-05-18: Marked M0/M1 interfaces as implemented and runtime-validated.

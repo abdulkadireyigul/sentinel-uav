@@ -38,10 +38,11 @@ ArduPilot ArduCopter SITL  <--MAVLink-->  MAVROS
                                     Sentinel UAV C++ nodes
 ```
 
-This repository currently contains the environment and an empty starter ROS 2 package:
+This repository currently contains the environment and starter ROS 2 packages:
 
 ```text
 src/sentinel_uav_core
+src/sentinel_uav_bringup
 ```
 
 Mission logic will be added only after the simulation stack can be launched and verified end to end.
@@ -101,7 +102,8 @@ colcon list
 Expected package discovery:
 
 ```text
-sentinel_uav_core    src/sentinel_uav_core    (ros.ament_cmake)
+sentinel_uav_bringup    src/sentinel_uav_bringup    (ros.ament_cmake)
+sentinel_uav_core       src/sentinel_uav_core       (ros.ament_cmake)
 ```
 
 ## Running the Simulation
@@ -158,11 +160,21 @@ ros2 topic list | grep mavros
 ros2 topic echo /mavros/state
 ```
 
+Run Sentinel M0-M1 bringup nodes (bringup_orchestrator + observer_node):
+
+```bash
+cd /workspaces/sentinel-uav
+colcon build
+source install/setup.bash
+
+ros2 launch sentinel_uav_bringup m0_m1_bringup.launch.py
+```
+
 ## Next Milestones
 
 1. ~~Add a minimal Gazebo + ArduPilot SITL launch path.~~ ✅
 2. ~~Select and integrate ROS 2 bridge (MAVROS over MAVLink).~~ ✅
-3. Add a small C++ observer node for vehicle health/state.
+3. ~~Add a small C++ observer node for vehicle health/state.~~ ✅
 4. Add the first simple control milestone: arm, take off, land via ROS 2.
 5. Build mission behavior after the basic loop is observable and testable.
 

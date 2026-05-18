@@ -148,10 +148,14 @@ These values are accepted as the initial baseline and may be updated after SITL 
 - Health checks for ROS graph, MAVROS topics, FCU connection, and service readiness.
 - Documented failure modes for startup issues.
 
+Status: Completed (v0.1)
+
 ## M1 - Observer V1
 
-- Publish or log unified health snapshot (mode, armed, pose, battery, mission_phase).
+- Publish or log unified health snapshot (mode, armed, pose, battery, power_state).
 - Event logs for state transitions and faults.
+
+Status: Completed (v0.1)
 
 ## M2 - Control V1
 
@@ -207,3 +211,4 @@ These values are accepted as the initial baseline and may be updated after SITL 
 
 - 2026-05-18: Initial mission roadmap drafted as v0.1-draft.
 - 2026-05-18: Baseline numeric parameters accepted and added.
+- 2026-05-18: Marked M0 and M1 as completed and aligned observer payload wording.
