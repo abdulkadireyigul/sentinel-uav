@@ -218,3 +218,4 @@ Status: In Progress (v0.1)
 - 2026-05-18: Marked M0 and M1 as completed and aligned observer payload wording.
 - 2026-05-18: Started M2 with control_node abort hook skeleton and runtime smoke check.
 - 2026-05-18: Hardened M2 abort status flow with deterministic state transitions and bounded request timeouts.
+- 2026-05-18: Added M2 control primitive scaffolding for arm/takeoff/land with FCU preconditions and timeout handling.

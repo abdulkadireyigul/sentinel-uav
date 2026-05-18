@@ -11,7 +11,11 @@ observer_node:
 
 control_node:
   ros__parameters:
+    guided_mode: GUIDED
+    arm_request_timeout_sec: 8.0
+    takeoff_request_timeout_sec: 30.0
     hold_mode: BRAKE
     hold_request_timeout_sec: 5.0
     land_request_timeout_sec: 8.0
     service_wait_timeout_sec: 0.5
+    fcu_state_stale_sec: 2.0

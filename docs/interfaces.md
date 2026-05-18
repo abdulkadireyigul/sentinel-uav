@@ -99,6 +99,36 @@ This document defines node-level communication contracts for Sentinel UAV.
 - Valid transition path:
 	- `abort_requested -> hold_requested -> (hold_succeeded|hold_failed) -> land_requested -> (land_succeeded|land_failed) -> (abort_completed|abort_failed)`
 
+### /sentinel/control/arm
+
+- Direction: subscribe
+- Owner: control_node
+- Purpose: trigger arm primitive (`true` only in v0.1)
+
+### /sentinel/control/takeoff_altitude
+
+- Direction: subscribe
+- Owner: control_node
+- Purpose: trigger takeoff primitive to requested altitude (meters)
+
+### /sentinel/control/land
+
+- Direction: subscribe
+- Owner: control_node
+- Purpose: trigger land primitive (`true` only in v0.1)
+
+### /sentinel/control/status
+
+- Direction: publish
+- Owner: control_node
+- Purpose: emit primitive command lifecycle and precondition outcomes
+- v0.1 examples:
+	- `arm_requested`, `arm_succeeded`, `arm_request_timeout`
+	- `takeoff_requested`, `takeoff_guided_mode_set`, `takeoff_succeeded`
+	- `land_requested`, `land_succeeded`
+	- `<command>_precondition_no_state`, `<command>_precondition_state_stale`, `<command>_precondition_fcu_disconnected`
+	- `<command>_rejected_busy`, `<command>_rejected_abort_in_progress`
+
 ## Reliability Requirements
 
 - Service calls must have bounded timeout.
@@ -143,3 +173,4 @@ This document defines node-level communication contracts for Sentinel UAV.
 - 2026-05-18: Marked M0/M1 interfaces as implemented and runtime-validated.
 - 2026-05-18: Added M2 control_node abort hook interfaces.
 - 2026-05-18: Hardened abort status contract with explicit state vocabulary and valid transition path.
+- 2026-05-18: Added M2 control primitive command/status interfaces for arm/takeoff/land.
