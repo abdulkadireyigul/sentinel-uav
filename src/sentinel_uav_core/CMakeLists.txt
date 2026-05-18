@@ -22,8 +22,18 @@ ament_target_dependencies(observer_node
   mavros_msgs)
 target_compile_features(observer_node PUBLIC cxx_std_17)
 
+add_executable(control_node src/control_node.cpp)
+ament_target_dependencies(control_node
+  rclcpp
+  std_msgs
+  geometry_msgs
+  sensor_msgs
+  mavros_msgs)
+target_compile_features(control_node PUBLIC cxx_std_17)
+
 install(TARGETS
   observer_node
+  control_node
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

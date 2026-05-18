@@ -8,3 +8,10 @@ observer_node:
     publish_hz: 1.0
     low_voltage_warn_v: 14.4
     critical_voltage_v: 14.0
+
+control_node:
+  ros__parameters:
+    hold_mode: BRAKE
+    hold_request_timeout_sec: 5.0
+    land_request_timeout_sec: 8.0
+    service_wait_timeout_sec: 0.5
