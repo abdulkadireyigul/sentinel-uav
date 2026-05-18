@@ -1,0 +1,10 @@
+bringup_orchestrator:
+  ros__parameters:
+    check_period_ms: 500
+    pose_stale_threshold_sec: 1.0
+
+observer_node:
+  ros__parameters:
+    publish_hz: 1.0
+    low_voltage_warn_v: 14.4
+    critical_voltage_v: 14.0
