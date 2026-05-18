@@ -11,6 +11,20 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(mavros_msgs REQUIRED)
+
+add_executable(observer_node src/observer_node.cpp)
+ament_target_dependencies(observer_node
+  rclcpp
+  std_msgs
+  geometry_msgs
+  sensor_msgs
+  mavros_msgs)
+target_compile_features(observer_node PUBLIC cxx_std_17)
+
+install(TARGETS
+  observer_node
+  DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
