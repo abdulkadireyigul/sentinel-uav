@@ -165,3 +165,13 @@ ros2 topic echo /mavros/state
 3. Add a small C++ observer node for vehicle health/state.
 4. Add the first simple control milestone: arm, take off, land via ROS 2.
 5. Build mission behavior after the basic loop is observable and testable.
+
+## Planning Documents
+
+- Mission roadmap and safety/acceptance plan: `docs/mission-roadmap.md`
+- Interface contract (living draft): `docs/interfaces.md`
+- Acceptance test matrix and evidence rules: `docs/test-matrix.md`
+
+## PR Checklist Rule
+
+- If behavior, interfaces, thresholds, or tests change, update code and all affected planning documents in the same PR with evidence links.
