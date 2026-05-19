@@ -162,7 +162,7 @@ source install/setup.bash
 ros2 launch sentinel_uav_bringup m0_m1_bringup.launch.py
 ```
 
-Run Sentinel M2 control skeleton (includes abort hook):
+Run Sentinel M2 control stack (integrated MAVROS + control primitives + abort hook):
 
 ```bash
 cd /workspaces/sentinel-uav
@@ -172,12 +172,13 @@ source install/setup.bash
 ros2 launch sentinel_uav_bringup m2_control_abort.launch.py
 ```
 
+Default M2 launch expects SITL instance `-I0` (`fcu_url=tcp://127.0.0.1:5760`).
+
 If SITL uses `-I1` because `5760` is occupied, use:
 
 ```bash
 ros2 launch sentinel_uav_bringup m2_control_abort.launch.py \
-        fcu_url:=tcp://127.0.0.1:5770 \
-        gcs_url:=udp://@127.0.0.1:14551
+        fcu_url:=tcp://127.0.0.1:5770
 ```
 
 ### Troubleshooting: Port 5760 Already In Use

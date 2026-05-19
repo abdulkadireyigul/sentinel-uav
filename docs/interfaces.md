@@ -6,7 +6,7 @@ This document defines node-level communication contracts for Sentinel UAV.
 
 - Version: v0.1-draft
 - Status: Draft
-- Last updated: 2026-05-18
+- Last updated: 2026-05-19
 - Validation state: Runtime-validated for M0/M1 bringup and observer topics
 
 ## Contract Change Policy
@@ -24,7 +24,7 @@ This document defines node-level communication contracts for Sentinel UAV.
 
 - bringup_orchestrator (implemented)
 - observer_node (implemented)
-- control_node (implemented, M2 abort hook skeleton)
+- control_node (implemented, M2 control primitives + abort flow)
 - mission_fsm_node (planned)
 - red_ball_detector_node (planned)
 - visual_approach_node (planned)
@@ -183,3 +183,4 @@ This document defines node-level communication contracts for Sentinel UAV.
 - 2026-05-18: Hardened abort status contract with explicit state vocabulary and valid transition path.
 - 2026-05-18: Added M2 control primitive command/status interfaces for arm/takeoff/land.
 - 2026-05-18: Added M2 goto_local_pose interface and goto lifecycle status examples.
+- 2026-05-19: Updated control_node implementation status wording and launch-default alignment context.

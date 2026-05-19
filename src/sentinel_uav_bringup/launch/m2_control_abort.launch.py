@@ -1,12 +1,27 @@
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description() -> LaunchDescription:
+    fcu_url = LaunchConfiguration('fcu_url')
+
     params_file = PathJoinSubstitution(
         [FindPackageShare('sentinel_uav_bringup'), 'config', 'mission_params.sim.yaml']
+    )
+
+    mavros = Node(
+        package='mavros',
+        executable='mavros_node',
+        output='screen',
+        parameters=[
+            {
+                'fcu_url': fcu_url,
+            }
+        ],
     )
 
     bringup = Node(
@@ -33,4 +48,12 @@ def generate_launch_description() -> LaunchDescription:
         parameters=[params_file],
     )
 
-    return LaunchDescription([bringup, observer, control])
+    return LaunchDescription(
+        [
+            DeclareLaunchArgument('fcu_url', default_value='tcp://127.0.0.1:5760'),
+            mavros,
+            bringup,
+            observer,
+            control,
+        ]
+    )
