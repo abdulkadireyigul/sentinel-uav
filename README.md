@@ -108,7 +108,7 @@ sentinel_uav_core       src/sentinel_uav_core       (ros.ament_cmake)
 
 ## Running the Simulation
 
-Open four terminals inside the Dev Container and run each command in order.
+Open terminals inside the Dev Container and run each command in order.
 
 **Terminal 1 — Gazebo:**
 
@@ -125,17 +125,7 @@ arducopter --model JSON --defaults /opt/ardupilot_gazebo/config/gazebo-iris-gimb
 > `--model JSON` is required. The `ardupilot_gazebo` plugin uses the JSON backend protocol.
 > Using `--model gazebo-iris` produces `Incorrect protocol magic` errors and no physics connection.
 
-**Terminal 3 — MAVROS:**
-
-```bash
-ros2 run mavros mavros_node --ros-args \
-  -p fcu_url:=tcp://127.0.0.1:5760 \
-  -p gcs_url:=udp://@127.0.0.1:14550 \
-  -p tgt_system:=1 \
-  -p tgt_component:=1
-```
-
-**Terminal 4 — MAVProxy (manual GCS for validation):**
+**Terminal 3 — MAVProxy (manual GCS for validation):**
 
 ```bash
 mavproxy.py --master tcp:127.0.0.1:5760 --out udp:127.0.0.1:14550
@@ -160,6 +150,8 @@ ros2 topic list | grep mavros
 ros2 topic echo /mavros/state
 ```
 
+For M2 launch below, MAVROS is started automatically inside the launch file.
+
 Run Sentinel M0-M1 bringup nodes (bringup_orchestrator + observer_node):
 
 ```bash
@@ -179,6 +171,36 @@ source install/setup.bash
 
 ros2 launch sentinel_uav_bringup m2_control_abort.launch.py
 ```
+
+If SITL uses `-I1` because `5760` is occupied, use:
+
+```bash
+ros2 launch sentinel_uav_bringup m2_control_abort.launch.py \
+        fcu_url:=tcp://127.0.0.1:5770 \
+        gcs_url:=udp://@127.0.0.1:14551
+```
+
+### Troubleshooting: Port 5760 Already In Use
+
+If SITL fails with `bind failed on port 5760`, VS Code may be holding the port
+from a restored forwarding session.
+
+Check on host:
+
+```bash
+sudo ss -lptn | grep 5760
+```
+
+If output shows `users:(("code",...))`:
+
+1. In VS Code, open the Ports view and stop forwarding port `5760`.
+2. Reload the VS Code window (or reopen the Dev Container).
+3. Start SITL again with `-I0`.
+
+Workspace defaults in this repo already reduce recurrence:
+
+- `remote.portsAttributes["5760"].onAutoForward = "ignore"`
+- `remote.restoreForwardedPorts = false`
 
 ### M2 Abort Hook: What It Does and How to Test It
 
